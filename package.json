@@ -1,26 +1,40 @@
 {
-  "name": "netdisk-mcp-server",
+  "name": "@ptbsare/netdisk-mcp-server",
   "version": "1.0.0",
-  "description": "MCP Server for Quark and 115 cloud storage operations",
+  "description": "MCP Server for Quark and 115 cloud storage: list, view, transfer, offline download, and multi-platform search",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "netdisk-mcp": "dist/index.js"
+    "netdisk-mcp-server": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "quark",
     "115",
     "cloud",
     "transfer",
-    "netdisk"
+    "netdisk",
+    "pansou",
+    "offline-download",
+    "magnet"
   ],
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ptbsare/netdisk-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ptbsare/netdisk-mcp-server/issues"
+  },
+  "homepage": "https://github.com/ptbsare/netdisk-mcp-server#readme",
+  "author": "ptbsare <496725701@qq.com>",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "axios": "^1.4.0"
@@ -32,5 +46,11 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ]
 }
