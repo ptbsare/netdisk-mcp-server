@@ -238,27 +238,51 @@ server.tool(
 server.tool(
   'health',
   [
-    'Check if the PanSou search API is reachable and list all available search plugins.',
-    'Use this to verify the PANSOU_URL configuration is working.',
+    'Check connectivity and validity of all configured services:',
+    '  - Quark cookie: attempts a lightweight API call to list Quark root',
+    '  - 115 cookie: attempts a lightweight API call to list 115 root',
+    '  - PanSou API: checks /api/health and lists available search plugins',
+    '',
+    'Use this to diagnose which services are working and which need attention.',
+    'Each check runs independently — partial failures are reported, not fatal.',
   ].join('\n'),
   {},
   async () => {
-    if (!pansou) {
-      return { content: [{ type: 'text', text: 'Error: PANSOU_URL environment variable is not set' }], isError: true };
+    const lines: string[] = ['=== Health Check ===', ''];
+
+    // Check Quark
+    if (config.quarkCookie) {
+      const quark = await client.checkQuarkCookie();
+      lines.push(quark.ok ? `✅ Quark: ${quark.message}` : `❌ Quark: ${quark.message}`);
+    } else {
+      lines.push('⏭️  Quark: not configured (NETDISK_QUARK_COOKIE not set)');
     }
-    try {
-      const data = await pansou.health();
-      const lines = [`Status: ${data.status}`, ''];
-      if (data.plugins?.length) {
-        lines.push(`Available plugins (${data.plugins.length}):`);
-        for (const p of data.plugins) {
-          lines.push(`  - ${p}`);
+
+    // Check 115
+    if (config.cookie115) {
+      const c115 = await client.check115Cookie();
+      lines.push(c115.ok ? `✅ 115: ${c115.message}` : `❌ 115: ${c115.message}`);
+    } else {
+      lines.push('⏭️  115: not configured (NETDISK_115_COOKIE not set)');
+    }
+
+    // Check PanSou
+    if (pansou) {
+      try {
+        const data = await pansou.health();
+        lines.push(`✅ PanSou: status ${data.status}`);
+        if (data.plugins?.length) {
+          lines.push(`   Plugins (${data.plugins.length}): ${data.plugins.join(', ')}`);
         }
+      } catch (err: any) {
+        lines.push(`❌ PanSou: ${err.message}`);
       }
-      return { content: [{ type: 'text', text: lines.join('\n') }] };
-    } catch (err: any) {
-      return { content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true };
+    } else {
+      lines.push('⏭️  PanSou: not configured (PANSOU_URL not set)');
     }
+
+    const hasError = lines.some(l => l.startsWith('❌'));
+    return { content: [{ type: 'text', text: lines.join('\n') }], isError: hasError };
   }
 );
 

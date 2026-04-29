@@ -214,6 +214,37 @@ export class NetdiskClient {
   }
 
   // ══════════════════════════════════════════════════════
+  // Health checks
+  // ══════════════════════════════════════════════════════
+
+  async checkQuarkCookie(): Promise<{ ok: boolean; message: string }> {
+    try {
+      const { data } = await this.quarkClient.get('/1/clouddrive/file/sort', {
+        params: { pr: 'ucpro', fr: 'pc', pdir_fid: '0', _page: '1', _size: '1', _fetch_total: 'false', _fetch_sub_dirs: '0' },
+      });
+      if (data?.data?.list) return { ok: true, message: 'Quark cookie is valid' };
+      return { ok: false, message: `Quark API error: ${data?.message || JSON.stringify(data).substring(0, 200)}` };
+    } catch (err: any) {
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        return { ok: false, message: 'Quark cookie expired or invalid (401/403)' };
+      }
+      return { ok: false, message: `Quark check failed: ${err.message}` };
+    }
+  }
+
+  async check115Cookie(): Promise<{ ok: boolean; message: string }> {
+    try {
+      const { data } = await this.client115.get('/files', {
+        params: { cid: '0', aid: 1, o: 'user_ptime', asc: 0, offset: 0, limit: 1, show_dir: 1, snap: 0, natsort: 1 },
+      });
+      if (data?.state) return { ok: true, message: '115 cookie is valid' };
+      return { ok: false, message: `115 cookie expired: ${data?.error || 'unknown error'}` };
+    } catch (err: any) {
+      return { ok: false, message: `115 check failed: ${err.message}` };
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
   // View
   // ══════════════════════════════════════════════════════
 

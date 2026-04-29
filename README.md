@@ -140,10 +140,25 @@ Supported cloud types: `quark`, `115`, `baidu`, `aliyun`, `tianyi`, `uc`, `mobil
 
 ### `health`
 
-Check PanSou API status and list available plugins.
+Check connectivity and validity of all configured services in one call:
+- **Quark cookie** — attempts a lightweight API call to verify the cookie works
+- **115 cookie** — attempts a lightweight API call to verify the cookie works
+- **PanSou API** — checks /api/health and lists available search plugins
+
+Each check runs independently — partial failures are reported, not fatal.
 
 ```
 health()
+```
+
+Example output:
+```
+=== Health Check ===
+
+✅ Quark: Quark cookie is valid
+✅ 115: 115 cookie is valid
+✅ PanSou: status ok
+   Plugins (43): ddys, erxiao, jutoushe, labi, ...
 ```
 
 ## Typical Workflow

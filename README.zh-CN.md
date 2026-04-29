@@ -138,10 +138,27 @@ search(query="电视剧", include=["合集"], exclude=["预告"])
 
 支持的网盘类型：`quark`, `115`, `baidu`, `aliyun`, `tianyi`, `uc`, `mobile`, `pikpak`, `xunlei`, `123`, `magnet`, `ed2k`
 
-### `health` — 检查 PanSou API
+### `health` — 全面健康检查
+
+一次调用检查所有已配置服务的连通性和有效性：
+- **夸克 Cookie** — 调用轻量级 API 验证 Cookie 是否有效
+- **115 Cookie** — 调用轻量级 API 验证 Cookie 是否有效
+- **PanSou API** — 检查 /api/health 并列出可用搜索插件
+
+每项检查独立运行，部分失败不会中断其他检查。
 
 ```
 health()
+```
+
+输出示例：
+```
+=== Health Check ===
+
+✅ Quark: Quark cookie is valid
+✅ 115: 115 cookie is valid
+✅ PanSou: status ok
+   Plugins (43): ddys, erxiao, jutoushe, labi, ...
 ```
 
 ## 典型工作流
