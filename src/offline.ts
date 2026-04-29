@@ -24,28 +24,23 @@ export class OfflineDownloader {
       throw new Error(`rss2cloud binary not found at ${RSS2CLOUD_BIN}`);
     }
 
-    // Ensure binary is executable
-    try {
-      fs.accessSync(RSS2CLOUD_BIN, fs.constants.X_OK);
-    } catch {
+    try { fs.accessSync(RSS2CLOUD_BIN, fs.constants.X_OK); } catch {
       fs.chmodSync(RSS2CLOUD_BIN, '755');
     }
 
     const targetFolderId = await this.client.resolve115PathToCID(targetPath);
 
-    // Create temp cookie file (rss2cloud expects .cookies in cwd)
+    // rss2cloud reads .cookies from cwd automatically
     const workDir = path.dirname(RSS2CLOUD_BIN);
     const cookieFile = path.join(workDir, '.cookies');
     const magnetFile = path.join(workDir, `magnets-${Date.now()}.txt`);
 
     try {
-      // Write cookie file
       fs.writeFileSync(cookieFile, this.config.cookie115);
-
-      // Write magnet links to temp file
       fs.writeFileSync(magnetFile, magnetLinks.join('\n'));
 
-      const cmd = `${RSS2CLOUD_BIN} magnet --text "${magnetFile}" --cid ${targetFolderId}`;
+      // Use --text with file (same as original implementation)
+      const cmd = `${RSS2CLOUD_BIN} magnet --text ${magnetFile} --cid ${targetFolderId}`;
       const result = execSync(cmd, {
         cwd: workDir,
         encoding: 'utf8',
@@ -69,7 +64,6 @@ export class OfflineDownloader {
 
       return lines.join('\n');
     } finally {
-      // Clean up temp files
       try { fs.unlinkSync(magnetFile); } catch {}
       try { fs.unlinkSync(cookieFile); } catch {}
     }
