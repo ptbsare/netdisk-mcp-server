@@ -1,0 +1,36 @@
+{
+  "name": "netdisk-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for Quark and 115 cloud storage operations",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "netdisk-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "quark",
+    "115",
+    "cloud",
+    "transfer",
+    "netdisk"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "axios": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
