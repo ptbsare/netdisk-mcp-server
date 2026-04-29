@@ -21,10 +21,21 @@ const server = new McpServer({
 // ── Tool: list ──
 server.tool(
   'list',
-  'List files and folders in a cloud drive directory. Supports Quark and 115.',
+  [
+    'List files and folders in your Quark or 115 cloud drive.',
+    'Returns numbered entries with [dir]/[file] type, name, size and ID.',
+    '',
+    'Examples:',
+    '  list(cloud="quark", path="/")           → list Quark root',
+    '  list(cloud="115",   path="/媒体库")     → list 115 媒体库 folder',
+    '',
+    'The path is resolved internally — you never need to know folder IDs.',
+  ].join('\n'),
   {
-    cloud: z.enum(['quark', '115']).describe('Cloud drive type'),
-    path: z.string().default('/').describe('Directory path to list, e.g. "/" or "/movies"'),
+    cloud: z.enum(['quark', '115']).describe('"quark" for 夸克网盘, "115" for 115网盘'),
+    path: z.string().default('/').describe(
+      'Directory path. Use "/" for root. Sub-folders like "/3670" or "/媒体库/电视剧".'
+    ),
   },
   async ({ cloud, path }) => {
     try {
@@ -46,10 +57,28 @@ server.tool(
 // ── Tool: view ──
 server.tool(
   'view',
-  'View files in a share link from Quark or 115 cloud drive. Supports glob patterns like *.mp4',
+  [
+    'View the file listing of a Quark or 115 share link.',
+    'Returns file name, size, and the folder each file lives in.',
+    '',
+    'Supported link formats:',
+    '  Quark: https://pan.quark.cn/s/<id>   (optionally with ?pwd=<code>)',
+    '  115:   https://115.com/s/<code>       (optionally with ?password=<code>)',
+    '  115:   https://115cdn.com/s/<code>    (optionally with ?password=<code>)',
+    '',
+    'file_pattern uses glob-style matching:',
+    '  *              all files (default)',
+    '  *.mp4          all MP4 files',
+    '  *.mkv          all MKV files',
+    '  S01E01*        files starting with "S01E01"',
+    '  *2160p*        files containing "2160p"',
+    '  exact.mp4      match exact filename',
+  ].join('\n'),
   {
-    share_link: z.string().describe('Full share link URL'),
-    file_pattern: z.string().default('*').describe('Glob pattern to filter files, e.g. "*.mp4", "S01E01*"'),
+    share_link: z.string().describe('Full share link URL from Quark or 115'),
+    file_pattern: z.string().default('*').describe(
+      'Glob pattern to filter by filename. Use "*" for all, "*.mp4" for videos, "S01E01*" for a specific episode, etc.'
+    ),
   },
   async ({ share_link, file_pattern }) => {
     try {
@@ -61,14 +90,37 @@ server.tool(
   }
 );
 
-// ── Tool: transfer (CP-like) ──
+// ── Tool: transfer ──
 server.tool(
   'transfer',
-  'Transfer files from a share link to a target directory using CP-like path patterns. Supports wildcards in the last path segment, e.g. "/folder/*S01E02*.mp4". Works for both Quark and 115 shares.',
+  [
+    'Transfer files from a Quark or 115 share link into your own cloud drive.',
+    'Uses CP-like path patterns: the last segment of source_pattern can contain wildcards.',
+    '',
+    'source_pattern rules:',
+    '  /                        → all files in root of the share',
+    '  /Season 1                → all files in "Season 1" folder',
+    '  /Season 1/*.mp4          → only .mp4 files in "Season 1"',
+    '  /Season 1/S01E01*        → files starting with "S01E01" in "Season 1"',
+    '  /folder/subfolder/*.mkv  → .mkv files in a nested folder',
+    '',
+    'target_path is a path in YOUR drive (not the share). Examples: "/3670", "/媒体库/电视剧"',
+    '',
+    'Workflow: search → view → transfer',
+    '  1. search("流浪地球", cloud_types=["quark"]) to find share links',
+    '  2. view(share_link, "*.mp4") to see what files are available',
+    '  3. transfer(share_link, "/Season 1/*.mp4", "/3670") to save them',
+    '',
+    'Note: 115 transfers may have a delay before files appear in the target folder.',
+  ].join('\n'),
   {
-    share_link: z.string().describe('Full share link URL'),
-    source_pattern: z.string().describe('Source path pattern from the share. Use "/" for all files, "/folder/*" for all in folder, "/folder/*.mp4" for mp4 in folder'),
-    target_path: z.string().describe('Target directory path in your drive, e.g. "/3670", "/媒体库"'),
+    share_link: z.string().describe('Full share link URL from Quark or 115'),
+    source_pattern: z.string().describe(
+      'Path pattern inside the share. "/" = all files. The last segment supports wildcards: "/Season 1/*.mp4"'
+    ),
+    target_path: z.string().describe(
+      'Destination path in YOUR cloud drive, e.g. "/3670", "/媒体库/电视剧". Path is resolved internally.'
+    ),
   },
   async ({ share_link, source_pattern, target_path }) => {
     try {
@@ -83,10 +135,26 @@ server.tool(
 // ── Tool: offline_download ──
 server.tool(
   'offline_download',
-  'Add offline download task to 115 cloud drive using magnet links. Downloads are processed server-side by 115.',
+  [
+    'Add magnet link download tasks to 115 cloud drive.',
+    '115 will download the files server-side — no local bandwidth needed.',
+    '',
+    'After adding the task, check progress in the 115 app "云下载" page.',
+    'Downloaded files appear in the target_path directory.',
+    '',
+    'Typical workflow:',
+    '  1. search("电影名", cloud_types=["magnet"]) to find magnet links',
+    '  2. offline_download(magnet_links=[...], target_path="/媒体库/云下载电影")',
+    '',
+    'Note: 115 has offline download quota limits. Check 115 app for current limits.',
+  ].join('\n'),
   {
-    magnet_links: z.array(z.string()).describe('Array of magnet link URLs'),
-    target_path: z.string().default('/').describe('Target directory path in 115 drive, e.g. "/downloads"'),
+    magnet_links: z.array(z.string()).describe(
+      'Array of magnet links, e.g. ["magnet:?xt=urn:btih:abc123...", ...]'
+    ),
+    target_path: z.string().default('/').describe(
+      'Target directory path in your 115 drive, e.g. "/媒体库/云下载电影"'
+    ),
   },
   async ({ magnet_links, target_path }) => {
     try {
@@ -101,14 +169,39 @@ server.tool(
 // ── Tool: search ──
 server.tool(
   'search',
-  'Search for movies, TV shows and other resources across 12+ cloud storage platforms via PanSou API. Returns share links and magnet links.',
+  [
+    'Search for movies, TV shows and resources across 12+ cloud storage platforms.',
+    'Returns share links (and optionally magnet links) grouped by cloud type.',
+    '',
+    'Results include: title, share URL, password (if any), date, and source.',
+    '',
+    'cloud_types filter:',
+    '  quark    夸克网盘    baidu    百度网盘    aliyun   阿里云盘',
+    '  115      115网盘     pikpak   PikPak      xunlei   迅雷网盘',
+    '  tianyi   天翼云盘    uc       UC网盘      123      123网盘',
+    '  magnet   磁力链接    ed2k     eD2K链接    mobile   移动云盘',
+    '',
+    'Examples:',
+    '  search(query="肖申克的救赎")',
+    '  search(query="权力的游戏", cloud_types=["quark", "115"])',
+    '  search(query="电影", cloud_types=["magnet"])',
+    '  search(query="电视剧", include=["合集"], exclude=["预告", "花絮"])',
+  ].join('\n'),
   {
-    query: z.string().describe('Search query (movie/TV show name)'),
-    cloud_types: z.array(z.string()).optional().describe('Filter by cloud types: baidu,aliyun,quark,tianyi,uc,mobile,115,pikpak,xunlei,123,magnet,ed2k'),
-    source: z.enum(['all', 'tg', 'plugin']).default('all').describe('Data source: all, tg, plugin'),
-    include: z.array(z.string()).optional().describe('Keywords that must be present in results'),
-    exclude: z.array(z.string()).optional().describe('Keywords to exclude from results'),
-    refresh: z.boolean().default(false).describe('Force refresh, bypass cache'),
+    query: z.string().describe('Search keyword — movie name, TV show name, or resource title'),
+    cloud_types: z.array(z.string()).optional().describe(
+      'Filter results to specific cloud platforms, e.g. ["quark", "magnet"]. Omit to search all.'
+    ),
+    source: z.enum(['all', 'tg', 'plugin']).default('all').describe(
+      '"all" = all sources, "tg" = Telegram channels only, "plugin" = search plugins only'
+    ),
+    include: z.array(z.string()).optional().describe(
+      'Only show results whose title contains ALL of these keywords, e.g. ["合集", "全集"]'
+    ),
+    exclude: z.array(z.string()).optional().describe(
+      'Hide results whose title contains any of these keywords, e.g. ["预告", "花絮"]'
+    ),
+    refresh: z.boolean().default(false).describe('Set true to bypass cache and fetch fresh results'),
   },
   async ({ query, cloud_types, source, include, exclude, refresh }) => {
     if (!pansou) {
@@ -144,7 +237,10 @@ server.tool(
 // ── Tool: health ──
 server.tool(
   'health',
-  'Check PanSou API health status and list available plugins.',
+  [
+    'Check if the PanSou search API is reachable and list all available search plugins.',
+    'Use this to verify the PANSOU_URL configuration is working.',
+  ].join('\n'),
   {},
   async () => {
     if (!pansou) {
