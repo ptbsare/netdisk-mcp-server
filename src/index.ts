@@ -6,14 +6,16 @@ import { z } from 'zod';
 import { loadConfig } from './config.js';
 import { NetdiskClient } from './client.js';
 import { PansouClient } from './pansou.js';
+import { OfflineDownloader } from './offline.js';
 
 const config = loadConfig();
 const client = new NetdiskClient(config);
 const pansou = config.pansouUrl ? new PansouClient(config.pansouUrl) : null;
+const downloader = new OfflineDownloader(config);
 
 const server = new McpServer({
   name: 'netdisk-mcp-server',
-  version: '2.0.0',
+  version: '3.0.0',
 });
 
 // ── Tool: list ──
@@ -53,6 +55,43 @@ server.tool(
     try {
       const lines = await client.viewShare(share_link, file_pattern);
       return { content: [{ type: 'text', text: lines.join('\n') }] };
+    } catch (err: any) {
+      return { content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true };
+    }
+  }
+);
+
+// ── Tool: transfer (CP-like) ──
+server.tool(
+  'transfer',
+  'Transfer files from a share link to a target directory using CP-like path patterns. Supports wildcards in the last path segment, e.g. "/folder/*S01E02*.mp4". Works for both Quark and 115 shares.',
+  {
+    share_link: z.string().describe('Full share link URL'),
+    source_pattern: z.string().describe('Source path pattern from the share. Use "/" for all files, "/folder/*" for all in folder, "/folder/*.mp4" for mp4 in folder'),
+    target_path: z.string().describe('Target directory path in your drive, e.g. "/3670", "/媒体库"'),
+  },
+  async ({ share_link, source_pattern, target_path }) => {
+    try {
+      const result = await client.transferRecursive(share_link, source_pattern, target_path);
+      return { content: [{ type: 'text', text: result }] };
+    } catch (err: any) {
+      return { content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true };
+    }
+  }
+);
+
+// ── Tool: offline_download ──
+server.tool(
+  'offline_download',
+  'Add offline download task to 115 cloud drive using magnet links. Downloads are processed server-side by 115.',
+  {
+    magnet_links: z.array(z.string()).describe('Array of magnet link URLs'),
+    target_path: z.string().default('/').describe('Target directory path in 115 drive, e.g. "/downloads"'),
+  },
+  async ({ magnet_links, target_path }) => {
+    try {
+      const result = await downloader.download(magnet_links, target_path);
+      return { content: [{ type: 'text', text: result }] };
     } catch (err: any) {
       return { content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true };
     }
