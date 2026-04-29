@@ -2,6 +2,9 @@
 
 # netdisk-mcp-server
 
+[![npm](https://img.shields.io/npm/v/@ptbsare/netdisk-mcp-server)](https://www.npmjs.com/package/@ptbsare/netdisk-mcp-server)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](./LICENSE)
+
 基于 MCP (Model Context Protocol) 的网盘操作服务器。集成 [夸克网盘](https://pan.quark.cn/) / [115网盘](https://115.com/) 文件浏览、转存、离线下载，以及 [PanSou](https://github.com/) 多平台资源搜索。
 
 ## 功能
@@ -17,44 +20,11 @@
 
 ## 快速开始
 
-### 直接使用（推荐）
+> **推荐使用 `npx` 直接运行——无需安装。**
 
-```bash
-npx @ptbsare/netdisk-mcp-server
-```
+### MCP 配置（Claude Desktop / Claude Code）
 
-### 本地安装
-
-```bash
-npm install -g @ptbsare/netdisk-mcp-server
-netdisk-mcp-server
-```
-
-### 环境变量
-
-```bash
-# 列出/查看/转存功能所需的网盘 Cookie
-export NETDISK_QUARK_COOKIE="你的夸克Cookie"
-export NETDISK_115_COOKIE="你的115Cookie"
-
-# 搜索/健康检查功能所需的 PanSou API 地址
-export PANSOU_URL="http://你的PanSou实例地址"
-
-# 可选
-export NETDISK_TIMEOUT="30"        # 请求超时秒数（默认 30）
-```
-
-也兼容 `CLOUD_TRANSFER_*` 前缀的环境变量名。
-
-### 获取 Cookie
-
-**夸克网盘** — 访问 https://pan.quark.cn/，登录后打开开发者工具（F12）→ Network，复制任意请求的 `Cookie` 头。
-
-**115网盘** — 访问 https://115.com/，登录后打开开发者工具（F12）→ Network，复制任意请求的 `Cookie` 头。
-
-## MCP 配置
-
-### Claude Desktop / Claude Code
+在你的 MCP 配置文件中添加：
 
 ```json
 {
@@ -65,12 +35,43 @@ export NETDISK_TIMEOUT="30"        # 请求超时秒数（默认 30）
       "env": {
         "NETDISK_QUARK_COOKIE": "你的夸克Cookie",
         "NETDISK_115_COOKIE": "你的115Cookie",
-        "PANSOU_URL": "http://你的PanSou实例"
+        "PANSOU_URL": "http://你的PanSou实例地址"
       }
     }
   }
 }
 ```
+
+`npx -y` 会在每次启动时自动下载并运行最新版本，无需手动安装。
+
+### 其他运行方式
+
+```bash
+# 全局安装后运行
+npm install -g @ptbsare/netdisk-mcp-server
+netdisk-mcp-server
+
+# 从源码运行
+git clone https://github.com/ptbsare/netdisk-mcp-server.git
+cd netdisk-mcp-server && npm install && npm start
+```
+
+## 环境变量
+
+| 变量 | 必需 | 说明 |
+|------|------|------|
+| `NETDISK_QUARK_COOKIE` | 夸克功能 | 夸克网盘 Cookie |
+| `NETDISK_115_COOKIE` | 115 功能 | 115 网盘 Cookie |
+| `PANSOU_URL` | 搜索功能 | PanSou API 端点地址 |
+| `NETDISK_TIMEOUT` | 否 | 请求超时秒数（默认 30） |
+
+也兼容 `CLOUD_TRANSFER_*` 前缀的环境变量名。
+
+### 获取 Cookie
+
+**夸克网盘** — 访问 https://pan.quark.cn/，登录后打开开发者工具（F12）→ Network，复制任意请求的 `Cookie` 头。
+
+**115网盘** — 访问 https://115.com/，登录后打开开发者工具（F12）→ Network，复制任意请求的 `Cookie` 头。
 
 ## 工具说明
 
@@ -101,17 +102,9 @@ view(share_link="https://115cdn.com/s/xxx?password=yyy", file_pattern="S01E01*")
 从分享链接转存文件到你的网盘。`source_pattern` 使用路径通配符。
 
 ```
-transfer(
-  share_link="https://pan.quark.cn/s/bdbdca12824c",
-  source_pattern="/",
-  target_path="/3670"
-)
-
-transfer(
-  share_link="https://115cdn.com/s/swfeyyj3zrk?password=eec5",
-  source_pattern="/Season 1/*.mp4",
-  target_path="/媒体库"
-)
+transfer(share_link="...", source_pattern="/",                 target_path="/3670")
+transfer(share_link="...", source_pattern="/Season 1/*.mp4",   target_path="/媒体库")
+transfer(share_link="...", source_pattern="/Season 1/S01E01*", target_path="/媒体库")
 ```
 
 `source_pattern` 规则：
@@ -119,7 +112,6 @@ transfer(
 - `/Season 1` — "Season 1" 文件夹中的所有文件
 - `/Season 1/*.mp4` — "Season 1" 中仅 .mp4 文件
 - `/Season 1/S01E01*` — "Season 1" 中以 "S01E01" 开头的文件
-- `/folder/subfolder/*.mkv` — 嵌套文件夹中的 .mkv 文件
 
 注意：115 转存可能有延迟，文件需要一段时间才会出现在目标文件夹中。
 
@@ -129,12 +121,10 @@ transfer(
 
 ```
 offline_download(
-  magnet_links=["magnet:?xt=urn:btih:abc123..."],
+  magnet_links=["magnet:?xt=urn:btih:xxx"],
   target_path="/媒体库/云下载电影"
 )
 ```
-
-添加任务后在 115 App 的"云下载"页面查看进度。
 
 ### `search` — 多平台资源搜索
 
@@ -142,9 +132,8 @@ offline_download(
 
 ```
 search(query="肖申克的救赎")
-search(query="权力的游戏", cloud_types=["quark", "115"])
-search(query="流浪地球", cloud_types=["magnet"])
-search(query="电视剧", include=["合集"], exclude=["预告", "花絮"])
+search(query="权力的游戏", cloud_types=["quark", "magnet"])
+search(query="电视剧", include=["合集"], exclude=["预告"])
 ```
 
 支持的网盘类型：`quark`, `115`, `baidu`, `aliyun`, `tianyi`, `uc`, `mobile`, `pikpak`, `xunlei`, `123`, `magnet`, `ed2k`
@@ -155,44 +144,15 @@ search(query="电视剧", include=["合集"], exclude=["预告", "花絮"])
 health()
 ```
 
-## 通配符模式
-
-| 模式 | 说明 |
-|------|------|
-| `*` | 所有文件 |
-| `*.mp4` | 所有 MP4 文件 |
-| `*.mkv` | 所有 MKV 文件 |
-| `S01E01*` | 以 "S01E01" 开头的文件 |
-| `*2160p*` | 包含 "2160p" 的文件 |
-
 ## 典型工作流
 
 ```
-1. search("流浪地球", cloud_types=["quark"])     → 找到分享链接
-2. view(share_link="...", file_pattern="*.mp4")   → 查看有哪些文件
-3. transfer(share_link="...", source_pattern="/", target_path="/3670") → 转存
+1. search("流浪地球", cloud_types=["quark"])                          → 找到分享链接
+2. view(share_link="https://...", file_pattern="*.mp4")               → 查看有哪些文件
+3. transfer(share_link="...", source_pattern="/", target_path="/3670")→ 转存到你的网盘
 
-1. search("电影", cloud_types=["magnet"])         → 找到磁力链接
-2. offline_download(magnet_links=["..."], target_path="/媒体库/云下载电影") → 离线下载
-```
-
-## 项目结构
-
-```
-netdisk-mcp-server/
-├── src/
-│   ├── index.ts     # MCP 服务器入口、工具定义
-│   ├── client.ts    # 夸克/115 网盘 API 客户端
-│   ├── config.ts    # 环境变量配置
-│   ├── pansou.ts    # PanSou 搜索 API 客户端
-│   └── offline.ts   # 115 离线下载（自动安装 rss2cloud）
-├── bin/             # 自动下载的 rss2cloud 二进制（已 gitignore）
-├── dist/            # 编译输出
-├── package.json
-├── tsconfig.json
-├── LICENSE          # GPLv3
-├── README.md        # 英文文档
-└── README.zh-CN.md  # 中文文档（本文件）
+1. search("电影", cloud_types=["magnet"])                              → 找到磁力链接
+2. offline_download(magnet_links=["magnet:?xt=..."], target_path="/media") → 离线下载
 ```
 
 ## 致谢
@@ -201,6 +161,6 @@ netdisk-mcp-server/
 
 ## 许可证
 
-[GPL-3.0-only](./LICENSE)
+[GPL-3.0-only](./LICENSE) — 详见 [LICENSE](./LICENSE) 全文。
 
 GitHub: https://github.com/ptbsare/netdisk-mcp-server
