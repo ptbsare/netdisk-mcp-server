@@ -7,7 +7,8 @@ import { Config } from './config.js';
 import { NetdiskClient } from './client.js';
 
 const RSS2CLOUD_VERSION = 'v0.2.3';
-const RSS2CLOUD_BIN_DIR = '/root/netdisk-mcp-server/bin';
+// Binary lives under the user's home: ~/.netdisk-mcp-server/bin
+const RSS2CLOUD_BIN_DIR = path.join(os.homedir(), '.netdisk-mcp-server', 'bin');
 const RSS2CLOUD_BIN = path.join(RSS2CLOUD_BIN_DIR, 'rss2cloud');
 
 function getDownloadURL(): { url: string; ext: string } {
