@@ -124,6 +124,7 @@ export class OfflineDownloader {
         cwd: workDir,
         encoding: 'utf8',
         timeout: 30000,
+        env: { ...process.env, GODEBUG: 'netdns=go' },
       });
 
       const lines = [
